@@ -1,22 +1,14 @@
-import JobCard from "./JobCard.jsx";
+import JobList from "./JobList.jsx";
 
-export default function JobsPage() {
+export default function JobsPage({ jobs }) {
   return (
-    <main lang="he" dir="rtl">
+    <main dir="rtl">
       <header>
         <h1>הצעד הבא</h1>
         <p>ניהול חיפוש העבודה שלי</p>
       </header>
 
-      <section>
-        <h2>המשרות שלי</h2>
-        <JobCard
-          title="Junior QA"
-          company="North Test"
-          city="חיפה"
-          status="נשמרה"
-        />
-      </section>
+      <JobList jobs={jobs} />
     </main>
   );
 }

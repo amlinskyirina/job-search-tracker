@@ -1,5 +1,7 @@
 import JobsPage from "./JobsPage.jsx";
+import { sampleJobs } from "./sampleJobs.js";
 
 export default function App() {
-  return <JobsPage />;
+  // מעבירים את מערך משרות הדוגמה למסך הראשי
+  return <JobsPage jobs={sampleJobs} />;
 }
