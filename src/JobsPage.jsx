@@ -1,6 +1,7 @@
 import JobList from "./JobList.jsx";
+import JobForm from "./JobForm.jsx";
 
-export default function JobsPage({ jobs }) {
+export default function JobsPage({ jobs, onAddJob }) {
   return (
     <main dir="rtl">
       <header>
@@ -9,6 +10,7 @@ export default function JobsPage({ jobs }) {
       </header>
 
       <JobList jobs={jobs} />
+      <JobForm onAddJob={onAddJob} />
     </main>
   );
 }
