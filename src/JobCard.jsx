@@ -1,6 +1,6 @@
 import styled from "styled-components";
+import { Link } from "react-router";
 
-// לכל סטטוס יש צבע רקע וצבע טקסט.
 const statusColors = {
   "נשמרה": { background: "#ede9fe", text: "#4c1d95" },
   "נשלחו קורות חיים": { background: "#dbeafe", text: "#1e40af" },
@@ -32,8 +32,12 @@ const StatusBadge = styled.span`
 
 const JobTitle = styled.h2`
   margin: 12px 0 8px;
-  color: #0f172a;
   font-size: 20px;
+`;
+
+const JobTitleLink = styled(Link)`
+  color: #1e40af;
+  text-decoration: underline;
 `;
 
 const JobDetail = styled.p`
@@ -47,7 +51,13 @@ export default function JobCard({ job }) {
   return (
     <Card dir="rtl">
       <StatusBadge $colors={colors}>{job.status}</StatusBadge>
-      <JobTitle><bdi>{job.title}</bdi></JobTitle>
+
+      <JobTitle>
+        <JobTitleLink to={`/jobs/${job.id}`}>
+          <bdi>{job.title}</bdi>
+        </JobTitleLink>
+      </JobTitle>
+
       <JobDetail>חברה: <bdi>{job.company}</bdi></JobDetail>
       <JobDetail>עיר: {job.city}</JobDetail>
     </Card>
