@@ -1,16 +1,30 @@
-# React + Vite
+# הצעד הבא | Job Search Tracker
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+אפליקציה לניהול חיפוש עבודה. אפשר לשמור משרות שמעניינות אותי,
+לעקוב אחר סטטוס המועמדות ולפתוח את הפרטים של כל משרה.
 
-Currently, two official plugins are available:
+## מה אפשר לעשות
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- לצפות ב־10 משרות לדוגמה בתצוגת כרטיסים המותאמת למחשב ולטלפון.
+- להוסיף משרה עם תפקיד, חברה, עיר וסטטוס, ולצרף קישור והערות לפי הצורך.
+- לפתוח את עמוד פרטי המשרה בלחיצה על שמה ולחזור לרשימה.
+- להמשיך מאותה רשימה אחרי רענון, בזכות שמירה ב־`localStorage`.
 
-## React Compiler
+## טכנולוגיות
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+React, Vite, React Router ו־styled-components.
 
-## Expanding the ESLint configuration
+## התקנה והרצה
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+מתוך תיקיית הפרויקט, הריצו:
+
+```bash
+npm install
+npm run dev
+```
+
+פתחו בדפדפן את הכתובת שמופיעה ליד `Local` בטרמינל.
+
+## ניהול משימות
+
+[GitHub Issues](https://github.com/amlinskyirina/job-search-tracker/issues)
