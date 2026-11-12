@@ -47,11 +47,14 @@ export default function App() {
 
   function handleEditJob(jobId, updatedFields) {
     const updatedJobs = jobs.map((job) =>
-      job.id === jobId
-        ? { ...job, ...updatedFields, id: job.id }
-        : job,
+      job.id === jobId ? { ...job, ...updatedFields, id: job.id } : job,
     );
 
+    saveJobs(updatedJobs);
+  }
+
+  function handleDeleteJob(jobId) {
+    const updatedJobs = jobs.filter((job) => job.id !== jobId);
     saveJobs(updatedJobs);
   }
 
@@ -66,7 +69,13 @@ export default function App() {
         />
         <Route
           path="/jobs/:jobId"
-          element={<JobDetailsPage jobs={jobs} onEditJob={handleEditJob} />}
+          element={
+            <JobDetailsPage
+              jobs={jobs}
+              onEditJob={handleEditJob}
+              onDeleteJob={handleDeleteJob}
+            />
+          }
         />
       </Routes>
     </BrowserRouter>
