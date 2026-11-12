@@ -26,10 +26,7 @@ export default function App() {
   const [jobs, setJobs] = useState(loadJobs);
   const [storageError, setStorageError] = useState("");
 
-  function handleAddJob(jobDetails) {
-    const newJob = { ...jobDetails, id: crypto.randomUUID() };
-    const updatedJobs = [newJob, ...jobs];
-
+  function saveJobs(updatedJobs) {
     setJobs(updatedJobs);
 
     try {
@@ -43,6 +40,21 @@ export default function App() {
     }
   }
 
+  function handleAddJob(jobDetails) {
+    const newJob = { ...jobDetails, id: crypto.randomUUID() };
+    saveJobs([newJob, ...jobs]);
+  }
+
+  function handleEditJob(jobId, updatedFields) {
+    const updatedJobs = jobs.map((job) =>
+      job.id === jobId
+        ? { ...job, ...updatedFields, id: job.id }
+        : job,
+    );
+
+    saveJobs(updatedJobs);
+  }
+
   return (
     <BrowserRouter>
       {storageError && <p role="alert" dir="rtl">{storageError}</p>}
@@ -54,7 +66,7 @@ export default function App() {
         />
         <Route
           path="/jobs/:jobId"
-          element={<JobDetailsPage jobs={jobs} />}
+          element={<JobDetailsPage jobs={jobs} onEditJob={handleEditJob} />}
         />
       </Routes>
     </BrowserRouter>
