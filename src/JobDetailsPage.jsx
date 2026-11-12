@@ -1,6 +1,5 @@
-//עריכת משרה
 import { useState } from "react";
-import { Link, useParams } from "react-router";
+import { Link, useNavigate, useParams } from "react-router";
 import styled from "styled-components";
 import JobForm from "./JobForm.jsx";
 
@@ -27,8 +26,16 @@ const Notes = styled.p`
   white-space: pre-wrap;
 `;
 
-export default function JobDetailsPage({ jobs, onEditJob }) {
+const Actions = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+`;
+
+export default function JobDetailsPage({ jobs, onEditJob, onDeleteJob }) {
   const { jobId } = useParams();
+  const navigate = useNavigate();
   const [editingJobId, setEditingJobId] = useState(null);
   const job = jobs.find((item) => String(item.id) === jobId);
 
@@ -50,6 +57,17 @@ export default function JobDetailsPage({ jobs, onEditJob }) {
     setEditingJobId(null);
   }
 
+  function handleDelete() {
+    const confirmed = window.confirm(`למחוק את המשרה "${job.title}"?`);
+
+    if (!confirmed) {
+      return;
+    }
+
+    onDeleteJob(job.id);
+    navigate("/", { replace: true });
+  }
+
   return (
     <Page dir="rtl">
       <Link to="/">חזרה לרשימת המשרות</Link>
@@ -62,7 +80,7 @@ export default function JobDetailsPage({ jobs, onEditJob }) {
       {job.notes && <Notes>הערות: {job.notes}</Notes>}
       {hasJobLink && <a href={jobUrl}>למודעת המשרה</a>}
 
-      <div>
+      <Actions>
         <button
           type="button"
           aria-expanded={isEditing}
@@ -71,15 +89,19 @@ export default function JobDetailsPage({ jobs, onEditJob }) {
           {isEditing ? "ביטול עריכה" : "עריכת משרה"}
         </button>
 
-        {isEditing && (
-          <JobForm
-            key={job.id}
-            initialJob={job}
-            onAddJob={handleSave}
-            onCancel={() => setEditingJobId(null)}
-          />
-        )}
-      </div>
+        <button type="button" onClick={handleDelete}>
+          מחיקת משרה
+        </button>
+      </Actions>
+
+      {isEditing && (
+        <JobForm
+          key={job.id}
+          initialJob={job}
+          onAddJob={handleSave}
+          onCancel={() => setEditingJobId(null)}
+        />
+      )}
     </Page>
   );
 }
