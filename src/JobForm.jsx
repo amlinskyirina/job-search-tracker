@@ -1,3 +1,5 @@
+//תופס הוספת משרה
+
 import { useState } from "react";
 import styled from "styled-components";
 
@@ -64,8 +66,10 @@ const SaveButton = styled.button`
   cursor: pointer;
 `;
 
-export default function JobForm({ onAddJob }) {
+export default function JobForm({ onAddJob, initialJob, onCancel }) {
   const [errorMessage, setErrorMessage] = useState("");
+  const isEditing = Boolean(initialJob);
+  const initialStatus = initialJob?.status ?? "";
 
   function handleSubmit(event) {
     event.preventDefault();
@@ -88,39 +92,54 @@ export default function JobForm({ onAddJob }) {
       return;
     }
 
+    setErrorMessage("");
     onAddJob(job);
-    form.reset();
+
+    if (!isEditing) {
+      form.reset();
+    }
   }
 
   return (
     <Form onSubmit={handleSubmit} onReset={() => setErrorMessage("")}>
-      <h2>הוספת משרה</h2>
+      <h2>{isEditing ? "עריכת פרטי המשרה" : "הוספת משרה"}</h2>
 
       <Fields>
         <Field>
           שם התפקיד *
-          <input name="title" required />
+          <input name="title" defaultValue={initialJob?.title ?? ""} required />
         </Field>
 
         <Field>
           שם החברה *
-          <input name="company" required />
+          <input name="company" defaultValue={initialJob?.company ?? ""} required />
         </Field>
 
         <Field>
           עיר *
-          <input name="city" required />
+          <input name="city" defaultValue={initialJob?.city ?? ""} required />
         </Field>
 
         <Field>
           קישור למודעה
-          <input name="url" type="url" placeholder="https://..." dir="ltr" />
+          <input
+            name="url"
+            type="url"
+            placeholder="https://..."
+            dir="ltr"
+            defaultValue={initialJob?.url ?? ""}
+          />
         </Field>
 
         <Field>
           סטטוס *
-          <select name="status" defaultValue="" required>
+          <select name="status" defaultValue={initialStatus} required>
             <option value="" disabled>בחרי סטטוס</option>
+
+            {initialStatus && !statuses.includes(initialStatus) && (
+              <option value={initialStatus}>{initialStatus}</option>
+            )}
+
             {statuses.map((status) => (
               <option key={status} value={status}>{status}</option>
             ))}
@@ -129,7 +148,7 @@ export default function JobForm({ onAddJob }) {
 
         <Field>
           הערות
-          <textarea name="notes" rows={2} />
+          <textarea name="notes" rows={2} defaultValue={initialJob?.notes ?? ""} />
         </Field>
       </Fields>
 
@@ -137,7 +156,12 @@ export default function JobForm({ onAddJob }) {
 
       <Actions>
         <SaveButton type="submit">שמירה</SaveButton>
-        <button type="reset">ביטול</button>
+
+        {isEditing ? (
+          <button type="button" onClick={onCancel}>ביטול</button>
+        ) : (
+          <button type="reset">ביטול</button>
+        )}
       </Actions>
     </Form>
   );
