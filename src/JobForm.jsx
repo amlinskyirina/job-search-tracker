@@ -1,13 +1,6 @@
 import { useState } from "react";
 import styled from "styled-components";
-
-const statuses = [
-  "נשמרה",
-  "נשלחו קורות חיים",
-  "נקבע ראיון",
-  "התקבלה הצעה",
-  "התהליך הסתיים",
-];
+import { statuses } from "./jobStatuses.js";
 
 const Form = styled.form`
   max-width: 1120px;
