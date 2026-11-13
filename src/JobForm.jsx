@@ -1,5 +1,3 @@
-//תופס הוספת משרה
-
 import { useState } from "react";
 import styled from "styled-components";
 
@@ -88,6 +86,7 @@ export default function JobForm({ onAddJob, initialJob, onCancel }) {
 
     // גם שדה שמכיל רק רווחים נחשב ריק.
     if (!job.title || !job.company || !job.city || !job.status) {
+      console.warn("שמירת המשרה נעצרה: אחד משדות החובה ריק.");
       setErrorMessage("יש למלא את כל שדות החובה.");
       return;
     }
@@ -152,7 +151,11 @@ export default function JobForm({ onAddJob, initialJob, onCancel }) {
         </Field>
       </Fields>
 
-      {errorMessage && <p role="alert">{errorMessage}</p>}
+      {errorMessage && (
+  <p role="alert" style={{ color: "#b91c1c" }}>
+    {errorMessage}
+  </p>
+)}
 
       <Actions>
         <SaveButton type="submit">שמירה</SaveButton>

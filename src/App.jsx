@@ -17,7 +17,7 @@ function loadJobs() {
     const parsedJobs = JSON.parse(savedJobs);
     return Array.isArray(parsedJobs) ? parsedJobs : sampleJobs;
   } catch (error) {
-    console.error("טעינת המשרות נכשלה", error);
+    console.error("טעינת המשרות נכשלה", error?.name ?? "UnknownError");
     return sampleJobs;
   }
 }
@@ -26,14 +26,18 @@ export default function App() {
   const [jobs, setJobs] = useState(loadJobs);
   const [storageError, setStorageError] = useState("");
 
-  function saveJobs(updatedJobs) {
+  function saveJobs(updatedJobs, operation) {
     setJobs(updatedJobs);
 
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedJobs));
       setStorageError("");
     } catch (error) {
-      console.error("שמירת המשרות נכשלה", error);
+      console.error(
+        `שמירת המשרות נכשלה אחרי ${operation}`,
+        error?.name ?? "UnknownError",
+      );
+
       setStorageError(
         "לא ניתן לשמור את המשרות בדפדפן. ייתכן ששינויים יאבדו ברענון.",
       );
@@ -42,7 +46,7 @@ export default function App() {
 
   function handleAddJob(jobDetails) {
     const newJob = { ...jobDetails, id: crypto.randomUUID() };
-    saveJobs([newJob, ...jobs]);
+    saveJobs([newJob, ...jobs], "הוספת משרה");
   }
 
   function handleEditJob(jobId, updatedFields) {
@@ -50,12 +54,12 @@ export default function App() {
       job.id === jobId ? { ...job, ...updatedFields, id: job.id } : job,
     );
 
-    saveJobs(updatedJobs);
+    saveJobs(updatedJobs, "עריכת משרה");
   }
 
   function handleDeleteJob(jobId) {
     const updatedJobs = jobs.filter((job) => job.id !== jobId);
-    saveJobs(updatedJobs);
+    saveJobs(updatedJobs, "מחיקת משרה");
   }
 
   return (
