@@ -5,15 +5,26 @@ import { statuses } from "./jobStatuses.js";
 
 export default function JobsPage({ jobs, onAddJob }) {
   const [selectedStatus, setSelectedStatus] = useState("");
+  const [searchText, setSearchText] = useState("");
 
   const filterStatuses = [
     ...new Set([...statuses, ...jobs.map((job) => job.status).filter(Boolean)]),
   ];
 
-  const visibleJobs =
-    selectedStatus === ""
-      ? jobs
-      : jobs.filter((job) => job.status === selectedStatus);
+  const query = searchText.trim().toLowerCase();
+
+  const visibleJobs = jobs.filter((job) => {
+    const matchesStatus = selectedStatus === "" || job.status === selectedStatus;
+    const matchesSearch =
+      query === "" ||
+      job.title?.toLowerCase().includes(query) ||
+      job.company?.toLowerCase().includes(query);
+
+    return matchesStatus && matchesSearch;
+  });
+
+  const showNoMatches =
+    visibleJobs.length === 0 && (query !== "" || selectedStatus !== "");
 
   return (
     <main dir="rtl">
@@ -21,6 +32,17 @@ export default function JobsPage({ jobs, onAddJob }) {
         <h1>הצעד הבא</h1>
         <p>ניהול חיפוש העבודה שלי</p>
       </header>
+
+      <div>
+        <label>
+          חיפוש לפי תפקיד או חברה{" "}
+          <input
+            type="search"
+            value={searchText}
+            onChange={(event) => setSearchText(event.target.value)}
+          />
+        </label>
+      </div>
 
       <label>
         סינון לפי סטטוס{" "}
@@ -38,8 +60,12 @@ export default function JobsPage({ jobs, onAddJob }) {
         </select>
       </label>
 
-      {selectedStatus !== "" && visibleJobs.length === 0 ? (
-        <p role="status">אין משרות בסטטוס שנבחר</p>
+      {showNoMatches ? (
+        <p role="status">
+          {query !== ""
+            ? "לא נמצאו משרות מתאימות"
+            : "אין משרות בסטטוס שנבחר"}
+        </p>
       ) : (
         <JobList jobs={visibleJobs} />
       )}
