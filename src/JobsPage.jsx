@@ -3,9 +3,12 @@ import JobList from "./JobList.jsx";
 import JobForm from "./JobForm.jsx";
 import { statuses } from "./jobStatuses.js";
 
+const titleCollator = new Intl.Collator("he", { sensitivity: "base" });
+
 export default function JobsPage({ jobs, onAddJob }) {
   const [selectedStatus, setSelectedStatus] = useState("");
   const [searchText, setSearchText] = useState("");
+  const [sortOrder, setSortOrder] = useState("");
 
   const filterStatuses = [
     ...new Set([...statuses, ...jobs.map((job) => job.status).filter(Boolean)]),
@@ -22,6 +25,18 @@ export default function JobsPage({ jobs, onAddJob }) {
 
     return matchesStatus && matchesSearch;
   });
+
+  const sortedJobs =
+    sortOrder === ""
+      ? visibleJobs
+      : [...visibleJobs].sort((firstJob, secondJob) => {
+          const comparison = titleCollator.compare(
+            firstJob.title ?? "",
+            secondJob.title ?? "",
+          );
+
+          return sortOrder === "asc" ? comparison : -comparison;
+        });
 
   const showNoMatches =
     visibleJobs.length === 0 && (query !== "" || selectedStatus !== "");
@@ -60,6 +75,20 @@ export default function JobsPage({ jobs, onAddJob }) {
         </select>
       </label>
 
+      <div>
+        <label>
+          מיון לפי שם התפקיד{" "}
+          <select
+            value={sortOrder}
+            onChange={(event) => setSortOrder(event.target.value)}
+          >
+            <option value="">סדר רגיל</option>
+            <option value="asc">סדר אלפביתי עולה</option>
+            <option value="desc">סדר אלפביתי יורד</option>
+          </select>
+        </label>
+      </div>
+
       {showNoMatches ? (
         <p role="status">
           {query !== ""
@@ -67,7 +96,7 @@ export default function JobsPage({ jobs, onAddJob }) {
             : "אין משרות בסטטוס שנבחר"}
         </p>
       ) : (
-        <JobList jobs={visibleJobs} />
+        <JobList jobs={sortedJobs} />
       )}
 
       <JobForm onAddJob={onAddJob} />
