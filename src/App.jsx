@@ -62,14 +62,34 @@ export default function App() {
     saveJobs(updatedJobs, "מחיקת משרה");
   }
 
+  function handleToggleFavorite(jobId) {
+    const updatedJobs = jobs.map((job) =>
+      job.id === jobId
+        ? { ...job, isFavorite: job.isFavorite !== true }
+        : job,
+    );
+
+    saveJobs(updatedJobs, "עדכון מועדפים");
+  }
+
   return (
     <BrowserRouter>
-      {storageError && <p role="alert" dir="rtl">{storageError}</p>}
+      {storageError && (
+        <p role="alert" dir="rtl">
+          {storageError}
+        </p>
+      )}
 
       <Routes>
         <Route
           path="/"
-          element={<JobsPage jobs={jobs} onAddJob={handleAddJob} />}
+          element={
+            <JobsPage
+              jobs={jobs}
+              onAddJob={handleAddJob}
+              onToggleFavorite={handleToggleFavorite}
+            />
+          }
         />
         <Route
           path="/jobs/:jobId"

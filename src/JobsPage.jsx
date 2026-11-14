@@ -5,10 +5,11 @@ import { statuses } from "./jobStatuses.js";
 
 const titleCollator = new Intl.Collator("he", { sensitivity: "base" });
 
-export default function JobsPage({ jobs, onAddJob }) {
+export default function JobsPage({ jobs, onAddJob, onToggleFavorite }) {
   const [selectedStatus, setSelectedStatus] = useState("");
   const [searchText, setSearchText] = useState("");
   const [sortOrder, setSortOrder] = useState("");
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
 
   const filterStatuses = [
     ...new Set([...statuses, ...jobs.map((job) => job.status).filter(Boolean)]),
@@ -22,8 +23,9 @@ export default function JobsPage({ jobs, onAddJob }) {
       query === "" ||
       job.title?.toLowerCase().includes(query) ||
       job.company?.toLowerCase().includes(query);
+    const matchesFavorite = !favoritesOnly || job.isFavorite === true;
 
-    return matchesStatus && matchesSearch;
+    return matchesStatus && matchesSearch && matchesFavorite;
   });
 
   const sortedJobs =
@@ -39,7 +41,16 @@ export default function JobsPage({ jobs, onAddJob }) {
         });
 
   const showNoMatches =
-    visibleJobs.length === 0 && (query !== "" || selectedStatus !== "");
+    visibleJobs.length === 0 &&
+    (query !== "" || selectedStatus !== "" || favoritesOnly);
+
+  let noMatchesMessage = "אין משרות בסטטוס שנבחר";
+
+  if (favoritesOnly) {
+    noMatchesMessage = "לא נמצאו משרות מועדפות מתאימות";
+  } else if (query !== "") {
+    noMatchesMessage = "לא נמצאו משרות מתאימות";
+  }
 
   return (
     <main dir="rtl">
@@ -89,14 +100,21 @@ export default function JobsPage({ jobs, onAddJob }) {
         </label>
       </div>
 
+      <div>
+        <label>
+          <input
+            type="checkbox"
+            checked={favoritesOnly}
+            onChange={(event) => setFavoritesOnly(event.target.checked)}
+          />{" "}
+          מועדפות בלבד
+        </label>
+      </div>
+
       {showNoMatches ? (
-        <p role="status">
-          {query !== ""
-            ? "לא נמצאו משרות מתאימות"
-            : "אין משרות בסטטוס שנבחר"}
-        </p>
+        <p role="status">{noMatchesMessage}</p>
       ) : (
-        <JobList jobs={sortedJobs} />
+        <JobList jobs={sortedJobs} onToggleFavorite={onToggleFavorite} />
       )}
 
       <JobForm onAddJob={onAddJob} />

@@ -20,6 +20,13 @@ const Card = styled.article`
   text-align: right;
 `;
 
+const CardHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+`;
+
 const StatusBadge = styled.span`
   display: inline-block;
   padding: 4px 12px;
@@ -28,6 +35,30 @@ const StatusBadge = styled.span`
   color: ${({ $colors }) => $colors.text};
   font-size: 14px;
   font-weight: 600;
+`;
+
+const FavoriteButton = styled.button`
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border: 1px solid #94a3b8;
+  border-radius: 8px;
+  background-color: #fff;
+  color: #475569;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+
+  &[aria-pressed="true"] {
+    border-color: #a16207;
+    background-color: #fef3c7;
+    color: #854d0e;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #1e40af;
+    outline-offset: 2px;
+  }
 `;
 
 const JobTitle = styled.h2`
@@ -45,12 +76,24 @@ const JobDetail = styled.p`
   color: #475569;
 `;
 
-export default function JobCard({ job }) {
+export default function JobCard({ job, onToggleFavorite }) {
   const colors = statusColors[job.status] ?? defaultStatusColors;
+  const isFavorite = job.isFavorite === true;
 
   return (
     <Card dir="rtl">
-      <StatusBadge $colors={colors}>{job.status}</StatusBadge>
+      <CardHeader>
+        <StatusBadge $colors={colors}>{job.status}</StatusBadge>
+
+        <FavoriteButton
+          type="button"
+          aria-label={`משרה מועדפת: ${job.title}`}
+          aria-pressed={isFavorite}
+          onClick={() => onToggleFavorite(job.id)}
+        >
+          <span aria-hidden="true">{isFavorite ? "★" : "☆"}</span>
+        </FavoriteButton>
+      </CardHeader>
 
       <JobTitle>
         <JobTitleLink to={`/jobs/${job.id}`}>
