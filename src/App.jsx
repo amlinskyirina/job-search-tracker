@@ -45,9 +45,14 @@ export default function App() {
   }
 
   function handleAddJob(jobDetails) {
-    const newJob = { ...jobDetails, id: crypto.randomUUID() };
-    saveJobs([newJob, ...jobs], "הוספת משרה");
-  }
+  const newJob = {
+    ...jobDetails,
+    id: crypto.randomUUID(),
+    createdAt: new Date().toISOString(),
+  };
+
+  saveJobs([newJob, ...jobs], "הוספת משרה");
+}
 
   function handleEditJob(jobId, updatedFields) {
     const updatedJobs = jobs.map((job) =>
