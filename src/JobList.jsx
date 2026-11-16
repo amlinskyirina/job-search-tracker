@@ -18,7 +18,7 @@ const JobsGrid = styled.section`
   }
 `;
 
-export default function JobList({ jobs }) {
+export default function JobList({ jobs, onDeleteJob }) {
   if (jobs.length === 0) {
     return <p>אין משרות להצגה.</p>;
   }
@@ -26,7 +26,7 @@ export default function JobList({ jobs }) {
   return (
     <JobsGrid aria-label="רשימת משרות">
       {jobs.map((job) => (
-        <JobCard key={job.id} job={job} />
+        <JobCard key={job.id} job={job} onDeleteJob={onDeleteJob} />
       ))}
     </JobsGrid>
   );
