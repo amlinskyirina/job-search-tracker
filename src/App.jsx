@@ -37,7 +37,6 @@ export default function App() {
         `שמירת המשרות נכשלה אחרי ${operation}`,
         error?.name ?? "UnknownError",
       );
-
       setStorageError(
         "לא ניתן לשמור את המשרות בדפדפן. ייתכן ששינויים יאבדו ברענון.",
       );
@@ -45,13 +44,25 @@ export default function App() {
   }
 
   function handleAddJob(jobDetails) {
-    const newJob = { ...jobDetails, id: crypto.randomUUID() };
+    const newJob = {
+      ...jobDetails,
+      id: crypto.randomUUID(),
+      createdAt: new Date().toISOString(),
+    };
+
     saveJobs([newJob, ...jobs], "הוספת משרה");
   }
 
   function handleEditJob(jobId, updatedFields) {
     const updatedJobs = jobs.map((job) =>
-      job.id === jobId ? { ...job, ...updatedFields, id: job.id } : job,
+      job.id === jobId
+        ? {
+            ...job,
+            ...updatedFields,
+            id: job.id,
+            createdAt: job.createdAt,
+          }
+        : job,
     );
 
     saveJobs(updatedJobs, "עריכת משרה");
@@ -64,13 +75,22 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      {storageError && <p role="alert" dir="rtl">{storageError}</p>}
+      {storageError && (
+        <p role="alert" dir="rtl">{storageError}</p>
+      )}
 
       <Routes>
         <Route
           path="/"
-          element={<JobsPage jobs={jobs} onAddJob={handleAddJob} />}
+          element={
+            <JobsPage
+              jobs={jobs}
+              onAddJob={handleAddJob}
+              onDeleteJob={handleDeleteJob}
+            />
+          }
         />
+
         <Route
           path="/jobs/:jobId"
           element={
