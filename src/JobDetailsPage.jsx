@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import styled from "styled-components";
 import JobForm from "./JobForm.jsx";
 
@@ -36,7 +35,7 @@ const Actions = styled.div`
 export default function JobDetailsPage({ jobs, onEditJob, onDeleteJob }) {
   const { jobId } = useParams();
   const navigate = useNavigate();
-  const [editingJobId, setEditingJobId] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
   const job = jobs.find((item) => String(item.id) === jobId);
 
   if (!job) {
@@ -48,13 +47,25 @@ export default function JobDetailsPage({ jobs, onEditJob, onDeleteJob }) {
     );
   }
 
-  const isEditing = editingJobId === jobId;
-  const jobUrl = job.url || "";
+  const isEditing = searchParams.get("edit") === "1";
+  const jobUrl = job.url?.trim() ?? "";
   const hasJobLink = /^https?:\/\//i.test(jobUrl);
+
+  function setEditing(shouldEdit) {
+    const nextParams = new URLSearchParams(searchParams);
+
+    if (shouldEdit) {
+      nextParams.set("edit", "1");
+    } else {
+      nextParams.delete("edit");
+    }
+
+    setSearchParams(nextParams, { replace: true });
+  }
 
   function handleSave(updatedFields) {
     onEditJob(job.id, updatedFields);
-    setEditingJobId(null);
+    setEditing(false);
   }
 
   function handleDelete() {
@@ -84,7 +95,7 @@ export default function JobDetailsPage({ jobs, onEditJob, onDeleteJob }) {
         <button
           type="button"
           aria-expanded={isEditing}
-          onClick={() => setEditingJobId(isEditing ? null : jobId)}
+          onClick={() => setEditing(!isEditing)}
         >
           {isEditing ? "ביטול עריכה" : "עריכת משרה"}
         </button>
@@ -99,7 +110,7 @@ export default function JobDetailsPage({ jobs, onEditJob, onDeleteJob }) {
           key={job.id}
           initialJob={job}
           onAddJob={handleSave}
-          onCancel={() => setEditingJobId(null)}
+          onCancel={() => setEditing(false)}
         />
       )}
     </Page>
