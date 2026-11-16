@@ -205,6 +205,23 @@ export default function JobsPage({
     sortOrder === ""
       ? visibleJobs
       : [...visibleJobs].sort((firstJob, secondJob) => {
+          if (sortOrder === "newest" || sortOrder === "oldest") {
+            const firstDate = Date.parse(firstJob.createdAt);
+            const secondDate = Date.parse(secondJob.createdAt);
+
+            if (!Number.isFinite(firstDate)) {
+              return Number.isFinite(secondDate) ? 1 : 0;
+            }
+
+            if (!Number.isFinite(secondDate)) {
+              return -1;
+            }
+
+            return sortOrder === "newest"
+              ? secondDate - firstDate
+              : firstDate - secondDate;
+          }
+
           const comparison = titleCollator.compare(
             firstJob.title ?? "",
             secondJob.title ?? "",
@@ -306,7 +323,7 @@ export default function JobsPage({
         </FilterField>
 
         <FilterField>
-          מיון לפי שם התפקיד
+          מיון משרות
           <select
             value={sortOrder}
             onChange={(event) => setSortOrder(event.target.value)}
@@ -314,6 +331,8 @@ export default function JobsPage({
             <option value="">סדר רגיל</option>
             <option value="asc">סדר אלפביתי עולה</option>
             <option value="desc">סדר אלפביתי יורד</option>
+            <option value="newest">מהחדשות לישנות</option>
+            <option value="oldest">מהישנות לחדשות</option>
           </select>
         </FilterField>
       </FilterBar>

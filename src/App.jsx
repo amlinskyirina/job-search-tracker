@@ -61,16 +61,12 @@ export default function App() {
             ...updatedFields,
             id: job.id,
             createdAt: job.createdAt,
+            isFavorite: job.isFavorite,
           }
         : job,
     );
 
     saveJobs(updatedJobs, "עריכת משרה");
-  }
-
-  function handleDeleteJob(jobId) {
-    const updatedJobs = jobs.filter((job) => job.id !== jobId);
-    saveJobs(updatedJobs, "מחיקת משרה");
   }
 
   function handleToggleFavorite(jobId) {
@@ -83,24 +79,29 @@ export default function App() {
     saveJobs(updatedJobs, "עדכון מועדפים");
   }
 
+  function handleDeleteJob(jobId) {
+    const updatedJobs = jobs.filter((job) => job.id !== jobId);
+    saveJobs(updatedJobs, "מחיקת משרה");
+  }
+
   return (
     <BrowserRouter>
       {storageError && (
-  <p role="alert" dir="rtl">
-    {storageError}
-  </p>
-)}
+        <p role="alert" dir="rtl">
+          {storageError}
+        </p>
+      )}
 
       <Routes>
         <Route
           path="/"
           element={
             <JobsPage
-  jobs={jobs}
-  onAddJob={handleAddJob}
-  onToggleFavorite={handleToggleFavorite}
-  onDeleteJob={handleDeleteJob}
-/>
+              jobs={jobs}
+              onAddJob={handleAddJob}
+              onToggleFavorite={handleToggleFavorite}
+              onDeleteJob={handleDeleteJob}
+            />
           }
         />
 
