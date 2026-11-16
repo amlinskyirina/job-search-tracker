@@ -20,6 +20,7 @@ const PageHeader = styled.header`
     justify-content: space-between;
   }
 `;
+
 const PageBrand = styled.div`
   display: flex;
   align-items: center;
@@ -148,7 +149,7 @@ const SearchField = styled.span`
   position: relative;
   display: block;
 
-  input {
+  && input {
     padding-inline-start: 42px;
   }
 
@@ -164,10 +165,16 @@ const SearchField = styled.span`
 
 const titleCollator = new Intl.Collator("he", { sensitivity: "base" });
 
-export default function JobsPage({ jobs, onAddJob, onDeleteJob }) {
+export default function JobsPage({
+  jobs,
+  onAddJob,
+  onToggleFavorite,
+  onDeleteJob,
+}) {
   const [selectedStatus, setSelectedStatus] = useState("");
   const [searchText, setSearchText] = useState("");
   const [sortOrder, setSortOrder] = useState("");
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
 
   const sentCount = jobs.filter(
     (job) => job.status === "נשלחו קורות חיים",
@@ -189,8 +196,9 @@ export default function JobsPage({ jobs, onAddJob, onDeleteJob }) {
       query === "" ||
       job.title?.toLowerCase().includes(query) ||
       job.company?.toLowerCase().includes(query);
+    const matchesFavorites = !favoritesOnly || job.isFavorite === true;
 
-    return matchesStatus && matchesSearch;
+    return matchesStatus && matchesSearch && matchesFavorites;
   });
 
   const sortedJobs =
@@ -206,23 +214,32 @@ export default function JobsPage({ jobs, onAddJob, onDeleteJob }) {
         });
 
   const showNoMatches =
-    visibleJobs.length === 0 && (query !== "" || selectedStatus !== "");
+    visibleJobs.length === 0 &&
+    (query !== "" || selectedStatus !== "" || favoritesOnly);
+
+  let noMatchesMessage = "לא נמצאו משרות מתאימות";
+
+  if (favoritesOnly && query === "" && selectedStatus === "") {
+    noMatchesMessage = "אין משרות מועדפות להצגה";
+  } else if (!favoritesOnly && query === "" && selectedStatus !== "") {
+    noMatchesMessage = "אין משרות בסטטוס שנבחר";
+  }
 
   return (
     <main dir="rtl">
       <PageHeader>
-       <PageBrand>
-  <svg viewBox="0 0 48 48" aria-hidden="true">
-    <path d="M4 38h12v-8h10v-8h12v24H4z" fill="#00a6b4" />
-    <path d="M34 23V4" stroke="#0f2044" strokeWidth="2" />
-    <path d="M35 4l11 5-11 5z" fill="#087f83" />
-  </svg>
+        <PageBrand>
+          <svg viewBox="0 0 48 48" aria-hidden="true">
+            <path d="M4 38h12v-8h10v-8h12v24H4z" fill="#00a6b4" />
+            <path d="M34 23V4" stroke="#0f2044" strokeWidth="2" />
+            <path d="M35 4l11 5-11 5z" fill="#087f83" />
+          </svg>
 
-  <div>
-    <PageTitle>הצעד הבא</PageTitle>
-    <PageSubtitle>ניהול חיפוש העבודה שלי</PageSubtitle>
-  </div>
-</PageBrand>
+          <div>
+            <PageTitle>הצעד הבא</PageTitle>
+            <PageSubtitle>ניהול חיפוש העבודה שלי</PageSubtitle>
+          </div>
+        </PageBrand>
 
         <AddJobLink href="#add-job">
           <span aria-hidden="true">+</span>
@@ -247,68 +264,79 @@ export default function JobsPage({ jobs, onAddJob, onDeleteJob }) {
         </SummaryCard>
       </SummaryGrid>
 
-     <FilterBar>
-  <FilterField>
-  חיפוש לפי תפקיד או חברה
-  <SearchField>
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <circle cx="10.5" cy="10.5" r="6.5" />
-      <path d="m16 16 4 4" />
-    </svg>
+      <FilterBar>
+        <FilterField>
+          חיפוש לפי תפקיד או חברה
+          <SearchField>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
+              <circle cx="10.5" cy="10.5" r="6.5" />
+              <path d="m16 16 4 4" />
+            </svg>
 
-    <input
-      type="search"
-      value={searchText}
-      onChange={(event) => setSearchText(event.target.value)}
-    />
-  </SearchField>
-</FilterField>
+            <input
+              type="search"
+              value={searchText}
+              onChange={(event) => setSearchText(event.target.value)}
+            />
+          </SearchField>
+        </FilterField>
 
-  <FilterField>
-    סינון לפי סטטוס
-    <select
-      value={selectedStatus}
-      onChange={(event) => setSelectedStatus(event.target.value)}
-    >
-      <option value="">כל הסטטוסים</option>
-      {filterStatuses.map((status) => (
-        <option key={status} value={status}>
-          {status}
-        </option>
-      ))}
-    </select>
-  </FilterField>
+        <FilterField>
+          סינון לפי סטטוס
+          <select
+            value={selectedStatus}
+            onChange={(event) => setSelectedStatus(event.target.value)}
+          >
+            <option value="">כל הסטטוסים</option>
+            {filterStatuses.map((status) => (
+              <option key={status} value={status}>
+                {status}
+              </option>
+            ))}
+          </select>
+        </FilterField>
 
-  <FilterField>
-    מיון לפי שם התפקיד
-    <select
-      value={sortOrder}
-      onChange={(event) => setSortOrder(event.target.value)}
-    >
-      <option value="">סדר רגיל</option>
-      <option value="asc">סדר אלפביתי עולה</option>
-      <option value="desc">סדר אלפביתי יורד</option>
-    </select>
-  </FilterField>
-</FilterBar>
+        <FilterField>
+          מיון לפי שם התפקיד
+          <select
+            value={sortOrder}
+            onChange={(event) => setSortOrder(event.target.value)}
+          >
+            <option value="">סדר רגיל</option>
+            <option value="asc">סדר אלפביתי עולה</option>
+            <option value="desc">סדר אלפביתי יורד</option>
+          </select>
+        </FilterField>
+      </FilterBar>
+
+      <div>
+        <label>
+          <input
+            type="checkbox"
+            checked={favoritesOnly}
+            onChange={(event) => setFavoritesOnly(event.target.checked)}
+          />{" "}
+          מועדפות בלבד
+        </label>
+      </div>
 
       {showNoMatches ? (
-        <p role="status">
-          {query !== ""
-            ? "לא נמצאו משרות מתאימות"
-            : "אין משרות בסטטוס שנבחר"}
-        </p>
+        <p role="status">{noMatchesMessage}</p>
       ) : (
-       <JobList jobs={sortedJobs} onDeleteJob={onDeleteJob} />
+        <JobList
+          jobs={sortedJobs}
+          onToggleFavorite={onToggleFavorite}
+          onDeleteJob={onDeleteJob}
+        />
       )}
 
       <div id="add-job" tabIndex={-1}>
