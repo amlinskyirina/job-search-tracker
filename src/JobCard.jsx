@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Link } from "react-router";
 import styled from "styled-components";
+import DeleteJobModal from "./DeleteJobModal.jsx";
 
 const statusColors = {
   "נשמרה": { background: "#ede9fe", text: "#4c1d95" },
@@ -11,12 +13,19 @@ const statusColors = {
 
 const defaultStatusColors = { background: "#f1f5f9", text: "#475569" };
 
+const dateFormatter = new Intl.DateTimeFormat("he-IL", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+});
+
 const iconPaths = {
   laptop: "M4 17V6h16v11M4 17h16l2 3H2l2-3Z",
   code: "m8 6-6 6 6 6m8-12 6 6-6 6M14 4l-4 16",
   flask: "M9 3h6M10 3v6L4 19a1 1 0 0 0 1 2h14a1 1 0 0 0 1-2L14 9V3M7 15h10",
   building: "M3 21h18M5 21V4h10v17m0-12h4v12M8 8h1m2 0h1M8 12h1m2 0h1M8 16h1m2 0h1",
   pin: "M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0ZM15 10a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z",
+  calendar: "M4 6h16v14H4zM4 10h16M8 3v5m8-5v5",
   external: "M13 5h6v6m0-6-9 9M19 13v6H5V5h6",
   trash: "M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v5m4-5v5",
   edit: "m14 6 4 4M5 19l4-1L20 7l-4-4L5 14l-1 5Z",
@@ -220,17 +229,20 @@ function getJobIconName(title) {
 }
 
 export default function JobCard({ job, onToggleFavorite, onDeleteJob }) {
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
   const colors = statusColors[job.status] ?? defaultStatusColors;
   const isFavorite = job.isFavorite === true;
   const iconName = getJobIconName(job.title ?? "");
   const detailsPath = `/jobs/${job.id}`;
   const jobUrl = job.url?.trim() ?? "";
   const hasJobLink = /^https?:\/\//i.test(jobUrl);
+  const creationTimestamp = Date.parse(job.createdAt);
+  const hasCreationDate = Number.isFinite(creationTimestamp);
 
-  function handleDelete() {
-    if (window.confirm(`למחוק את המשרה "${job.title}"?`)) {
-      onDeleteJob(job.id);
-    }
+  function handleConfirmDelete() {
+    setIsDeleteModalOpen(false);
+    onDeleteJob(job.id);
   }
 
   return (
@@ -269,19 +281,42 @@ export default function JobCard({ job, onToggleFavorite, onDeleteJob }) {
             <JobIcon name="pin" size={16} />
             <span>עיר: <bdi>{job.city}</bdi></span>
           </JobDetail>
+
+          <JobDetail>
+            <JobIcon name="calendar" size={16} />
+            <span>
+              תאריך הוספה:{" "}
+              {hasCreationDate ? (
+                <time dateTime={new Date(creationTimestamp).toISOString()}>
+                  {dateFormatter.format(creationTimestamp)}
+                </time>
+              ) : (
+                "לא זמין"
+              )}
+            </span>
+          </JobDetail>
         </JobText>
       </JobInfo>
 
       <CardActions>
         {hasJobLink && (
-          <a href={jobUrl} data-action="external">
+          <a
+            href={jobUrl}
+            data-action="external"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             <JobIcon name="external" size={16} />
             למודעה
           </a>
         )}
 
         {onDeleteJob && (
-          <button type="button" data-action="delete" onClick={handleDelete}>
+          <button
+            type="button"
+            data-action="delete"
+            onClick={() => setIsDeleteModalOpen(true)}
+          >
             <JobIcon name="trash" size={16} />
             מחיקה
           </button>
@@ -292,6 +327,14 @@ export default function JobCard({ job, onToggleFavorite, onDeleteJob }) {
           עריכה
         </Link>
       </CardActions>
+
+      {isDeleteModalOpen && (
+        <DeleteJobModal
+          jobTitle={job.title}
+          onCancel={() => setIsDeleteModalOpen(false)}
+          onConfirm={handleConfirmDelete}
+        />
+      )}
     </Card>
   );
 }

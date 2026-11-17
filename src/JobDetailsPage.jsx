@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import styled from "styled-components";
+import DeleteJobModal from "./DeleteJobModal.jsx";
 import JobForm from "./JobForm.jsx";
 
 const Page = styled.main`
@@ -36,6 +38,7 @@ export default function JobDetailsPage({ jobs, onEditJob, onDeleteJob }) {
   const { jobId } = useParams();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const job = jobs.find((item) => String(item.id) === jobId);
 
   if (!job) {
@@ -68,13 +71,8 @@ export default function JobDetailsPage({ jobs, onEditJob, onDeleteJob }) {
     setEditing(false);
   }
 
-  function handleDelete() {
-    const confirmed = window.confirm(`למחוק את המשרה "${job.title}"?`);
-
-    if (!confirmed) {
-      return;
-    }
-
+  function handleConfirmDelete() {
+    setIsDeleteModalOpen(false);
     onDeleteJob(job.id);
     navigate("/", { replace: true });
   }
@@ -89,7 +87,12 @@ export default function JobDetailsPage({ jobs, onEditJob, onDeleteJob }) {
       <p>סטטוס: {job.status}</p>
 
       {job.notes && <Notes>הערות: {job.notes}</Notes>}
-      {hasJobLink && <a href={jobUrl}>למודעת המשרה</a>}
+
+      {hasJobLink && (
+        <a href={jobUrl} target="_blank" rel="noopener noreferrer">
+          למודעת המשרה
+        </a>
+      )}
 
       <Actions>
         <button
@@ -100,7 +103,10 @@ export default function JobDetailsPage({ jobs, onEditJob, onDeleteJob }) {
           {isEditing ? "ביטול עריכה" : "עריכת משרה"}
         </button>
 
-        <button type="button" onClick={handleDelete}>
+        <button
+          type="button"
+          onClick={() => setIsDeleteModalOpen(true)}
+        >
           מחיקת משרה
         </button>
       </Actions>
@@ -111,6 +117,14 @@ export default function JobDetailsPage({ jobs, onEditJob, onDeleteJob }) {
           initialJob={job}
           onAddJob={handleSave}
           onCancel={() => setEditing(false)}
+        />
+      )}
+
+      {isDeleteModalOpen && (
+        <DeleteJobModal
+          jobTitle={job.title}
+          onCancel={() => setIsDeleteModalOpen(false)}
+          onConfirm={handleConfirmDelete}
         />
       )}
     </Page>

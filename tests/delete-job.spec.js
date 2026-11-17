@@ -27,24 +27,26 @@ test("keeps a job on cancel and removes it on confirmation", async ({ page }) =>
     name: "מחיקת משרה",
     exact: true,
   });
-
-  // מבטלים את המחיקה ובודקים שהמשרה עדיין פתוחה.
-  page.once("dialog", (dialog) => dialog.dismiss());
-  await deleteButton.click();
-
-  await expect(page).toHaveURL(detailsUrl);
-  await expect(page.getByRole("heading", { name: title, exact: true }))
-    .toBeVisible();
-
-  // מאשרים את המחיקה ובודקים את ההודעה שהוצגה.
-  const confirmation = page.waitForEvent("dialog").then(async (dialog) => {
-    const message = dialog.message();
-    await dialog.accept();
-    return message;
+  const modal = page.getByRole("dialog", {
+    name: "מחיקת משרה",
+    exact: true,
   });
 
-  const [message] = await Promise.all([confirmation, deleteButton.click()]);
-  expect(message).toContain(title);
+  // ביטול סוגר את החלון ומשאיר את המשרה בדף הפרטים.
+  await deleteButton.click();
+  await expect(modal).toBeVisible();
+  await expect(modal).toContainText(title);
+  await modal.getByRole("button", { name: "ביטול", exact: true }).click();
+
+  await expect(modal).toBeHidden();
+  await expect(page).toHaveURL(detailsUrl);
+  await expect(
+    page.getByRole("heading", { name: title, exact: true }),
+  ).toBeVisible();
+
+  // אישור מחזיר לרשימה ומסיר את המשרה שנבחרה.
+  await deleteButton.click();
+  await modal.getByRole("button", { name: "מחיקה", exact: true }).click();
 
   await expect(page).toHaveURL(new URL("/", detailsUrl).href);
   await expect(jobLink).toHaveCount(0);
