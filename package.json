@@ -3,12 +3,13 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
-  },
+"scripts": {
+  "dev": "vite",
+  "build": "vite build",
+  "lint": "eslint .",
+  "preview": "vite preview",
+  "test:e2e": "firebase emulators:exec --project demo-job-search-tracker --only auth,firestore \"playwright test\""
+},
   "dependencies": {
     "firebase": "^13.4.0",
     "react": "^19.3.1",
@@ -25,6 +26,7 @@
     "eslint": "^10.14.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.7",
+    "firebase-tools": "^15.37.0",
     "globals": "^17.13.0",
     "vite": "^8.3.6"
   },
