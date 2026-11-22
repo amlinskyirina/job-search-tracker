@@ -19,13 +19,28 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '22'
+          node-version: '24'
+          cache: npm
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
 
       - name: Install project dependencies
         run: npm ci
 
-      - name: Install Playwright browsers
-        run: npx playwright install
+      - name: Install Chromium
+        run: npx playwright install chromium
 
-      - name: Run Playwright tests
-        run: npx playwright test
+      - name: Run Playwright tests with Firebase emulators
+        run: npm run test:e2e
+
+      - name: Upload test results on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: test-results/
+          retention-days: 7
