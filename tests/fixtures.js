@@ -1,7 +1,7 @@
 import { test as base, expect } from "@playwright/test";
 
 export const test = base.extend({
-  page: async ({ page }, use) => {
+  page: async ({ page }, providePage) => {
     await page.goto("/");
 
     await page.evaluate(async () => {
@@ -15,7 +15,7 @@ export const test = base.extend({
       }),
     ).toBeVisible();
 
-    await use(page);
+    await providePage(page);
   },
 });
 
@@ -27,12 +27,16 @@ export async function addJob(page, job) {
   await form.getByLabel(/תפקיד/).fill(job.title);
   await form.getByLabel(/חברה/).fill(job.company);
   await form.getByLabel(/עיר/).fill(job.city);
+
   await form
     .getByLabel(/סטטוס/)
     .selectOption({ label: job.status });
 
   await form
-    .getByRole("button", { name: "שמירה", exact: true })
+    .getByRole("button", {
+      name: "שמירה",
+      exact: true,
+    })
     .click();
 
   await expect(
