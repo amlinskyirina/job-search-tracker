@@ -1,17 +1,20 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link } from "react-router";
 import styled from "styled-components";
 import DeleteJobModal from "./DeleteJobModal.jsx";
 
 const statusColors = {
-  "נשמרה": { background: "#ede9fe", text: "#4c1d95" },
+  נשמרה: { background: "#ede9fe", text: "#4c1d95" },
   "נשלחו קורות חיים": { background: "#dbeafe", text: "#1e40af" },
   "נקבע ראיון": { background: "#d1fae5", text: "#065f46" },
   "התקבלה הצעה": { background: "#fef3c7", text: "#854d0e" },
   "התהליך הסתיים": { background: "#ffedd5", text: "#9a3412" },
 };
 
-const defaultStatusColors = { background: "#f1f5f9", text: "#475569" };
+const defaultStatusColors = {
+  background: "#f1f5f9",
+  text: "#475569",
+};
 
 const dateFormatter = new Intl.DateTimeFormat("he-IL", {
   day: "2-digit",
@@ -22,9 +25,12 @@ const dateFormatter = new Intl.DateTimeFormat("he-IL", {
 const iconPaths = {
   laptop: "M4 17V6h16v11M4 17h16l2 3H2l2-3Z",
   code: "m8 6-6 6 6 6m8-12 6 6-6 6M14 4l-4 16",
-  flask: "M9 3h6M10 3v6L4 19a1 1 0 0 0 1 2h14a1 1 0 0 0 1-2L14 9V3M7 15h10",
-  building: "M3 21h18M5 21V4h10v17m0-12h4v12M8 8h1m2 0h1M8 12h1m2 0h1M8 16h1m2 0h1",
-  pin: "M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0ZM15 10a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z",
+  flask:
+    "M9 3h6M10 3v6L4 19a1 1 0 0 0 1 2h14a1 1 0 0 0 1-2L14 9V3M7 15h10",
+  building:
+    "M3 21h18M5 21V4h10v17m0-12h4v12M8 8h1m2 0h1M8 12h1m2 0h1M8 16h1m2 0h1",
+  pin:
+    "M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0ZM15 10a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z",
   calendar: "M4 6h16v14H4zM4 10h16M8 3v5m8-5v5",
   external: "M13 5h6v6m0-6-9 9M19 13v6H5V5h6",
   trash: "M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v5m4-5v5",
@@ -81,6 +87,11 @@ const FavoriteButton = styled.button`
   &:focus-visible {
     outline: 2px solid #1e40af;
     outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: wait;
   }
 `;
 
@@ -196,6 +207,16 @@ const CardActions = styled.div`
     outline: 2px solid #087f83;
     outline-offset: 2px;
   }
+
+  button:disabled {
+    opacity: 0.65;
+    cursor: wait;
+  }
+`;
+
+const ErrorMessage = styled.p`
+  margin: 12px 0 0;
+  color: #b91c1c;
 `;
 
 function JobIcon({ name, size = 24 }) {
@@ -210,6 +231,7 @@ function JobIcon({ name, size = 24 }) {
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
+      focusable="false"
     >
       <path d={iconPaths[name]} />
     </svg>
@@ -228,8 +250,17 @@ function getJobIconName(title) {
   return "laptop";
 }
 
-export default function JobCard({ job, onToggleFavorite, onDeleteJob }) {
+export default function JobCard({
+  job,
+  onToggleFavorite,
+  onDeleteJob,
+}) {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isUpdatingFavorite, setIsUpdatingFavorite] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const operationRef = useRef(false);
 
   const colors = statusColors[job.status] ?? defaultStatusColors;
   const isFavorite = job.isFavorite === true;
@@ -239,25 +270,91 @@ export default function JobCard({ job, onToggleFavorite, onDeleteJob }) {
   const hasJobLink = /^https?:\/\//i.test(jobUrl);
   const creationTimestamp = Date.parse(job.createdAt);
   const hasCreationDate = Number.isFinite(creationTimestamp);
+  const isBusy = isDeleting || isUpdatingFavorite;
 
-  function handleConfirmDelete() {
+  async function handleToggleFavorite() {
+    if (operationRef.current || !onToggleFavorite) return;
+
+    operationRef.current = true;
+    setIsUpdatingFavorite(true);
+    setErrorMessage("");
+
+    try {
+      const success = await onToggleFavorite(job.id);
+
+      if (success === false) {
+        setErrorMessage("עדכון המועדפות נכשל. נסי שוב.");
+      }
+    } catch (error) {
+      console.error(
+        "עדכון המועדפות נכשל",
+        error?.code ?? error?.name,
+      );
+      setErrorMessage("עדכון המועדפות נכשל. נסי שוב.");
+    } finally {
+      operationRef.current = false;
+      setIsUpdatingFavorite(false);
+    }
+  }
+
+  function openDeleteModal() {
+    if (operationRef.current) return;
+
+    setErrorMessage("");
+    setIsDeleteModalOpen(true);
+  }
+
+  function closeDeleteModal() {
+    if (operationRef.current) return;
+
     setIsDeleteModalOpen(false);
-    onDeleteJob(job.id);
+  }
+
+  async function handleConfirmDelete() {
+    if (operationRef.current || !onDeleteJob) return false;
+
+    operationRef.current = true;
+    setIsDeleting(true);
+
+    try {
+      const success = await onDeleteJob(job.id);
+
+      if (success === false) return false;
+
+      setIsDeleteModalOpen(false);
+      return true;
+    } catch (error) {
+      console.error(
+        "מחיקת המשרה נכשלה",
+        error?.code ?? error?.name,
+      );
+      return false;
+    } finally {
+      operationRef.current = false;
+      setIsDeleting(false);
+    }
   }
 
   return (
-    <Card dir="rtl">
+    <Card dir="rtl" aria-busy={isBusy}>
       <CardHeader>
-        <StatusBadge $colors={colors}>{job.status}</StatusBadge>
+        <StatusBadge $colors={colors}>
+          {job.status}
+        </StatusBadge>
 
-        <FavoriteButton
-          type="button"
-          aria-label={`משרה מועדפת: ${job.title}`}
-          aria-pressed={isFavorite}
-          onClick={() => onToggleFavorite(job.id)}
-        >
-          <span aria-hidden="true">{isFavorite ? "★" : "☆"}</span>
-        </FavoriteButton>
+        {onToggleFavorite && (
+          <FavoriteButton
+            type="button"
+            aria-label={`משרה מועדפת: ${job.title}`}
+            aria-pressed={isFavorite}
+            disabled={isBusy}
+            onClick={handleToggleFavorite}
+          >
+            <span aria-hidden="true">
+              {isFavorite ? "★" : "☆"}
+            </span>
+          </FavoriteButton>
+        )}
       </CardHeader>
 
       <JobInfo>
@@ -274,12 +371,16 @@ export default function JobCard({ job, onToggleFavorite, onDeleteJob }) {
 
           <JobDetail>
             <JobIcon name="building" size={16} />
-            <span>חברה: <bdi>{job.company}</bdi></span>
+            <span>
+              חברה: <bdi>{job.company}</bdi>
+            </span>
           </JobDetail>
 
           <JobDetail>
             <JobIcon name="pin" size={16} />
-            <span>עיר: <bdi>{job.city}</bdi></span>
+            <span>
+              עיר: <bdi>{job.city}</bdi>
+            </span>
           </JobDetail>
 
           <JobDetail>
@@ -287,7 +388,9 @@ export default function JobCard({ job, onToggleFavorite, onDeleteJob }) {
             <span>
               תאריך הוספה:{" "}
               {hasCreationDate ? (
-                <time dateTime={new Date(creationTimestamp).toISOString()}>
+                <time
+                  dateTime={new Date(creationTimestamp).toISOString()}
+                >
                   {dateFormatter.format(creationTimestamp)}
                 </time>
               ) : (
@@ -315,10 +418,11 @@ export default function JobCard({ job, onToggleFavorite, onDeleteJob }) {
           <button
             type="button"
             data-action="delete"
-            onClick={() => setIsDeleteModalOpen(true)}
+            disabled={isBusy}
+            onClick={openDeleteModal}
           >
             <JobIcon name="trash" size={16} />
-            מחיקה
+            {isDeleting ? "מוחקת..." : "מחיקה"}
           </button>
         )}
 
@@ -328,10 +432,16 @@ export default function JobCard({ job, onToggleFavorite, onDeleteJob }) {
         </Link>
       </CardActions>
 
+      {errorMessage && (
+        <ErrorMessage role="alert">
+          {errorMessage}
+        </ErrorMessage>
+      )}
+
       {isDeleteModalOpen && (
         <DeleteJobModal
           jobTitle={job.title}
-          onCancel={() => setIsDeleteModalOpen(false)}
+          onCancel={closeDeleteModal}
           onConfirm={handleConfirmDelete}
         />
       )}
