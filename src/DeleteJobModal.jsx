@@ -1,15 +1,18 @@
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import styled from "styled-components";
 
 const Dialog = styled.dialog`
   box-sizing: border-box;
   width: min(420px, calc(100% - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
   padding: 24px;
   border: 1px solid #ccd9ee;
   border-radius: 14px;
   background: #fff;
   color: #0f2044;
   text-align: start;
+  overflow-wrap: anywhere;
 
   &::backdrop {
     background: #0f172a80;
@@ -42,21 +45,106 @@ const Actions = styled.div`
     background: #b91c1c;
     color: #fff;
   }
+
+  button:disabled {
+    opacity: 0.65;
+    cursor: wait;
+  }
+
+  button:focus-visible {
+    outline: 2px solid #087f83;
+    outline-offset: 2px;
+  }
 `;
 
-export default function DeleteJobModal({ jobTitle, onCancel, onConfirm }) {
+const ErrorMessage = styled.p`
+  color: #b91c1c;
+`;
+
+export default function DeleteJobModal({
+  jobTitle,
+  onCancel,
+  onConfirm,
+}) {
   const dialogRef = useRef(null);
   const cancelButtonRef = useRef(null);
+  const submittingRef = useRef(false);
+  const mountedRef = useRef(false);
+
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
   const titleId = useId();
   const descriptionId = useId();
 
   useEffect(() => {
-    const dialog = dialogRef.current;
-    dialog.showModal();
-    cancelButtonRef.current.focus();
+    mountedRef.current = true;
 
-    return () => dialog.close();
+    const dialog = dialogRef.current;
+    const previousFocus = document.activeElement;
+
+    if (!dialog.open) {
+      dialog.showModal();
+    }
+
+    cancelButtonRef.current?.focus();
+
+    return () => {
+      mountedRef.current = false;
+
+      if (dialog.open) {
+        dialog.close();
+      }
+
+      if (
+        previousFocus instanceof HTMLElement &&
+        previousFocus.isConnected
+      ) {
+        previousFocus.focus();
+      }
+    };
   }, []);
+
+  function handleCancel() {
+    if (submittingRef.current) return;
+
+    onCancel();
+  }
+
+  async function handleConfirm() {
+    if (submittingRef.current) return;
+
+    submittingRef.current = true;
+    setIsDeleting(true);
+    setErrorMessage("");
+
+    try {
+      const success = await onConfirm();
+
+      if (success === false && mountedRef.current) {
+        setErrorMessage(
+          "המחיקה נכשלה. בדקי את החיבור ונסי שוב.",
+        );
+      }
+    } catch (error) {
+      console.error(
+        "אישור המחיקה נכשל",
+        error?.code ?? error?.name,
+      );
+
+      if (mountedRef.current) {
+        setErrorMessage(
+          "המחיקה נכשלה. בדקי את החיבור ונסי שוב.",
+        );
+      }
+    } finally {
+      submittingRef.current = false;
+
+      if (mountedRef.current) {
+        setIsDeleting(false);
+      }
+    }
+  }
 
   return (
     <Dialog
@@ -64,9 +152,10 @@ export default function DeleteJobModal({ jobTitle, onCancel, onConfirm }) {
       dir="rtl"
       aria-labelledby={titleId}
       aria-describedby={descriptionId}
+      aria-busy={isDeleting}
       onCancel={(event) => {
         event.preventDefault();
-        onCancel();
+        handleCancel();
       }}
     >
       <h2 id={titleId}>מחיקת משרה</h2>
@@ -75,13 +164,33 @@ export default function DeleteJobModal({ jobTitle, onCancel, onConfirm }) {
         האם למחוק את המשרה ״<bdi>{jobTitle}</bdi>״?
       </p>
 
+      {isDeleting && (
+        <p role="status">ממתינה לאישור המחיקה מהענן...</p>
+      )}
+
+      {errorMessage && (
+        <ErrorMessage role="alert">
+          {errorMessage}
+        </ErrorMessage>
+      )}
+
       <Actions>
-        <button ref={cancelButtonRef} type="button" onClick={onCancel}>
+        <button
+          ref={cancelButtonRef}
+          type="button"
+          disabled={isDeleting}
+          onClick={handleCancel}
+        >
           ביטול
         </button>
 
-        <button type="button" data-action="confirm" onClick={onConfirm}>
-          מחיקה
+        <button
+          type="button"
+          data-action="confirm"
+          disabled={isDeleting}
+          onClick={handleConfirm}
+        >
+          {isDeleting ? "מוחקת..." : "מחיקה"}
         </button>
       </Actions>
     </Dialog>

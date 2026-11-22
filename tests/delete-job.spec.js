@@ -1,58 +1,80 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, addJob } from "./fixtures.js";
 
-test("keeps a job on cancel and removes it on confirmation", async ({ page }) => {
-  const title = "QA Engineer - Delete Test";
+test("keeps a job on cancel and removes it on confirmation", async ({
+  page,
+}) => {
+  const retainedJob = {
+    title: "QA Engineer - Keep Test",
+    company: "Keep Company",
+    city: "חיפה",
+    status: "נשמרה",
+  };
 
-  await page.goto("/");
+  const deletedJob = {
+    title: "QA Engineer - Delete Test",
+    company: "Delete Company",
+    city: "תל אביב",
+    status: "נקבע ראיון",
+  };
 
-  const jobLinks = page.getByRole("article").getByRole("link");
-  const existingTitle = (await jobLinks.first().innerText()).trim();
-  const existingJob = page.getByRole("link", {
-    name: existingTitle,
+  await addJob(page, retainedJob);
+  await addJob(page, deletedJob);
+
+  const retainedLink = page.getByRole("link", {
+    name: retainedJob.title,
     exact: true,
   });
 
-  const form = page.locator("form");
-  await form.getByLabel(/תפקיד/).fill(title);
-  await form.getByLabel(/חברה/).fill("Test Company");
-  await form.getByLabel(/עיר/).fill("חיפה");
-  await form.getByLabel(/סטטוס/).selectOption({ label: "נקבע ראיון" });
-  await form.getByRole("button", { name: "שמירה", exact: true }).click();
+  const deletedLink = page.getByRole("link", {
+    name: deletedJob.title,
+    exact: true,
+  });
 
-  const jobLink = page.getByRole("link", { name: title, exact: true });
-  await jobLink.click();
+  await deletedLink.click();
 
   const detailsUrl = page.url();
+
   const deleteButton = page.getByRole("button", {
     name: "מחיקת משרה",
     exact: true,
   });
+
   const modal = page.getByRole("dialog", {
     name: "מחיקת משרה",
     exact: true,
   });
 
-  // ביטול סוגר את החלון ומשאיר את המשרה בדף הפרטים.
   await deleteButton.click();
+
   await expect(modal).toBeVisible();
-  await expect(modal).toContainText(title);
-  await modal.getByRole("button", { name: "ביטול", exact: true }).click();
+  await expect(modal).toContainText(deletedJob.title);
+
+  await modal
+    .getByRole("button", { name: "ביטול", exact: true })
+    .click();
 
   await expect(modal).toBeHidden();
   await expect(page).toHaveURL(detailsUrl);
+
   await expect(
-    page.getByRole("heading", { name: title, exact: true }),
+    page.getByRole("heading", {
+      name: deletedJob.title,
+      exact: true,
+    }),
   ).toBeVisible();
 
-  // אישור מחזיר לרשימה ומסיר את המשרה שנבחרה.
   await deleteButton.click();
-  await modal.getByRole("button", { name: "מחיקה", exact: true }).click();
+
+  await modal
+    .getByRole("button", { name: "מחיקה", exact: true })
+    .click();
 
   await expect(page).toHaveURL(new URL("/", detailsUrl).href);
-  await expect(jobLink).toHaveCount(0);
-  await expect(existingJob).toBeVisible();
+  await expect(retainedLink).toBeVisible();
+  await expect(deletedLink).toHaveCount(0);
 
   await page.reload();
-  await expect(existingJob).toBeVisible();
-  await expect(jobLink).toHaveCount(0);
+
+  await expect(retainedLink).toBeVisible();
+  await expect(deletedLink).toHaveCount(0);
 });

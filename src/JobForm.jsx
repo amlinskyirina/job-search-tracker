@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import styled from "styled-components";
 import { statuses } from "./jobStatuses.js";
 
@@ -23,6 +23,7 @@ function FormIcon({ name, size = 18 }) {
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
+      focusable="false"
     >
       <path d={iconPaths[name]} />
     </svg>
@@ -58,9 +59,13 @@ const HeadingIcon = styled.span`
   color: #fff;
 `;
 
-const Fields = styled.div`
+const Fields = styled.fieldset`
   display: grid;
   gap: 16px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
 
   @media (min-width: 768px) {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -95,6 +100,17 @@ const Field = styled.label`
     outline: 2px solid #087f83;
     outline-offset: 2px;
   }
+
+  input:disabled,
+  select:disabled,
+  textarea:disabled {
+    opacity: 0.7;
+    cursor: wait;
+  }
+
+  textarea {
+    resize: vertical;
+  }
 `;
 
 const UrlField = styled.span`
@@ -120,6 +136,11 @@ const ErrorMessage = styled.p`
   color: #b91c1c;
 `;
 
+const StatusMessage = styled.p`
+  margin: 12px 0 0;
+  color: #065f46;
+`;
+
 const Actions = styled.div`
   display: flex;
   flex-wrap: wrap;
@@ -130,6 +151,11 @@ const Actions = styled.div`
   button:focus-visible {
     outline: 2px solid #0f2044;
     outline-offset: 2px;
+  }
+
+  button:disabled {
+    opacity: 0.65;
+    cursor: wait;
   }
 `;
 
@@ -148,7 +174,7 @@ const SaveButton = styled.button`
   font-weight: 600;
   cursor: pointer;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background-color: #066b70;
   }
 `;
@@ -166,62 +192,130 @@ const CancelButton = styled.button`
 
 export default function JobForm({ onAddJob, initialJob, onCancel }) {
   const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const savingRef = useRef(false);
+
   const isEditing = Boolean(initialJob);
   const initialStatus = initialJob?.status ?? "";
 
   function handleInvalid(event) {
+    setSuccessMessage("");
+
     if (event.target.validity.valueMissing) {
       setErrorMessage(requiredFieldsMessage);
+    } else if (event.target.name === "url") {
+      setErrorMessage("יש להזין קישור תקין שמתחיל ב־http:// או ב־https://.");
     }
   }
 
-  function handleSubmit(event) {
+  function handleReset(event) {
+    if (savingRef.current) {
+      event.preventDefault();
+      return;
+    }
+
+    setErrorMessage("");
+    setSuccessMessage("");
+  }
+
+  async function handleSubmit(event) {
     event.preventDefault();
+
+    // מונע שליחה כפולה גם לפני ש-React מעדכן את הכפתור.
+    if (savingRef.current) return;
 
     const form = event.currentTarget;
     const formData = new FormData(form);
 
     const job = {
-      title: formData.get("title").trim(),
-      company: formData.get("company").trim(),
-      city: formData.get("city").trim(),
-      status: formData.get("status"),
-      url: formData.get("url").trim(),
-      notes: formData.get("notes").trim(),
+      title: String(formData.get("title") ?? "").trim(),
+      company: String(formData.get("company") ?? "").trim(),
+      city: String(formData.get("city") ?? "").trim(),
+      status: String(formData.get("status") ?? "").trim(),
+      url: String(formData.get("url") ?? "").trim(),
+      notes: String(formData.get("notes") ?? "").trim(),
     };
 
+    setErrorMessage("");
+    setSuccessMessage("");
+
     if (!job.title || !job.company || !job.city || !job.status) {
-      console.warn("שמירת המשרה נעצרה: אחד משדות החובה ריק.");
       setErrorMessage(requiredFieldsMessage);
       return;
     }
 
-    setErrorMessage("");
-    onAddJob(job);
+    if (job.url) {
+      try {
+        const url = new URL(job.url);
 
-    if (!isEditing) {
-      form.reset();
+        if (url.protocol !== "http:" && url.protocol !== "https:") {
+          throw new Error("Unsupported URL protocol");
+        }
+      } catch {
+        setErrorMessage(
+          "יש להזין קישור תקין שמתחיל ב־http:// או ב־https://.",
+        );
+        return;
+      }
+    }
+
+    savingRef.current = true;
+    setIsSaving(true);
+
+    try {
+      const success = await onAddJob(job);
+
+      if (success === false) {
+        setErrorMessage(
+          "השמירה נכשלה. הפרטים נשארו בטופס. נסי שוב.",
+        );
+        return;
+      }
+
+      if (!isEditing) {
+        // מאפשר איפוס רק לאחר שהשמירה הצליחה.
+        savingRef.current = false;
+        form.reset();
+        setSuccessMessage("המשרה נשמרה בהצלחה.");
+      }
+    } catch (error) {
+      console.error("שמירת המשרה נכשלה", error?.code ?? error?.name);
+
+      setErrorMessage(
+        "השמירה נכשלה. הפרטים נשארו בטופס. נסי שוב.",
+      );
+    } finally {
+      savingRef.current = false;
+      setIsSaving(false);
     }
   }
 
   return (
     <Form
       dir="rtl"
+      aria-label={isEditing ? "עריכת פרטי המשרה" : "הוספת משרה"}
+      aria-busy={isSaving}
       onSubmit={handleSubmit}
       onInvalidCapture={handleInvalid}
-      onReset={() => setErrorMessage("")}
+      onReset={handleReset}
     >
       <FormHeading>
         <HeadingIcon>
           <FormIcon name={isEditing ? "edit" : "plus"} />
         </HeadingIcon>
+
         {isEditing ? "עריכת פרטי המשרה" : "הוספת משרה"}
       </FormHeading>
 
-      <Fields>
+      <Fields disabled={isSaving}>
         <Field>
           שם התפקיד *
-          <input name="title" defaultValue={initialJob?.title ?? ""} required />
+          <input
+            name="title"
+            defaultValue={initialJob?.title ?? ""}
+            required
+          />
         </Field>
 
         <Field>
@@ -235,7 +329,11 @@ export default function JobForm({ onAddJob, initialJob, onCancel }) {
 
         <Field>
           עיר *
-          <input name="city" defaultValue={initialJob?.city ?? ""} required />
+          <input
+            name="city"
+            defaultValue={initialJob?.city ?? ""}
+            required
+          />
         </Field>
 
         <Field>
@@ -254,15 +352,25 @@ export default function JobForm({ onAddJob, initialJob, onCancel }) {
 
         <Field>
           סטטוס *
-          <select name="status" defaultValue={initialStatus} required>
-            <option value="" disabled>בחרי סטטוס</option>
+          <select
+            name="status"
+            defaultValue={initialStatus}
+            required
+          >
+            <option value="" disabled>
+              בחרי סטטוס
+            </option>
 
             {initialStatus && !statuses.includes(initialStatus) && (
-              <option value={initialStatus}>{initialStatus}</option>
+              <option value={initialStatus}>
+                {initialStatus}
+              </option>
             )}
 
             {statuses.map((status) => (
-              <option key={status} value={status}>{status}</option>
+              <option key={status} value={status}>
+                {status}
+              </option>
             ))}
           </select>
         </Field>
@@ -277,18 +385,36 @@ export default function JobForm({ onAddJob, initialJob, onCancel }) {
         </Field>
       </Fields>
 
-      {errorMessage && <ErrorMessage role="alert">{errorMessage}</ErrorMessage>}
+      {errorMessage && (
+        <ErrorMessage role="alert">
+          {errorMessage}
+        </ErrorMessage>
+      )}
+
+      {successMessage && (
+        <StatusMessage role="status">
+          {successMessage}
+        </StatusMessage>
+      )}
 
       <Actions>
-        <SaveButton type="submit">
+        <SaveButton type="submit" disabled={isSaving}>
           <FormIcon name="save" />
-          שמירה
+          {isSaving ? "שומרת..." : "שמירה"}
         </SaveButton>
 
         {isEditing ? (
-          <CancelButton type="button" onClick={onCancel}>ביטול</CancelButton>
+          <CancelButton
+            type="button"
+            onClick={onCancel}
+            disabled={isSaving}
+          >
+            ביטול
+          </CancelButton>
         ) : (
-          <CancelButton type="reset">ביטול</CancelButton>
+          <CancelButton type="reset" disabled={isSaving}>
+            ביטול
+          </CancelButton>
         )}
       </Actions>
     </Form>

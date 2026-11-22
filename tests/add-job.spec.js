@@ -1,6 +1,6 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, addJob } from "./fixtures.js";
 
-test("adds a job and shows it in the job list", async ({ page }) => {
+test("adds a job and keeps it after reload", async ({ page }) => {
   const job = {
     title: "QA Engineer E2E",
     company: "Test Company",
@@ -8,30 +8,27 @@ test("adds a job and shows it in the job list", async ({ page }) => {
     status: "נקבע ראיון",
   };
 
-  await page.goto("/");
-
   const jobTitleLink = page.getByRole("link", {
     name: job.title,
     exact: true,
   });
+
   await expect(jobTitleLink).toHaveCount(0);
 
-  const form = page.locator("form");
+  await addJob(page, job);
 
-await form.scrollIntoViewIfNeeded();
-  await form.getByLabel(/תפקיד/).fill(job.title);
-  await form.getByLabel(/חברה/).fill(job.company);
-  await form.getByLabel(/עיר/).fill(job.city);
-  await form.getByLabel(/סטטוס/).selectOption({ label: job.status });
-  await form.getByRole("button", { name: /שמירה|שמור/ }).click();
+  const newCard = page
+    .getByRole("article")
+    .filter({ has: jobTitleLink });
 
-  const newCard = page.getByRole("article").filter({ has: jobTitleLink });
-
-  await expect(newCard).toBeVisible();
-  await newCard.scrollIntoViewIfNeeded();
   await expect(newCard).toContainText(job.company);
   await expect(newCard).toContainText(job.city);
   await expect(newCard).toContainText(job.status);
+
+  await page.reload();
+
+  await expect(jobTitleLink).toBeVisible();
+  await expect(newCard).toContainText(job.company);
 });
 
 //הרצה 
